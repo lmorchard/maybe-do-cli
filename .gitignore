@@ -1,0 +1,6 @@
+*.DS_Store
+*.sw?
+*~
+npm-debug.log
+build/
+node_modules/
