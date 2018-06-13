@@ -16,12 +16,12 @@ Build a coffee table
 Make music
 ```
 
-1. Run the tool with an input and output file name:
+2. Run the tool with an input and output file name:
 ```
 node index.js maybe-do.txt maybe-do-sorted.txt
 ```
 
-1. Rank each pair with 1, 2, or 3 keys and see a sorted list:
+2. Rank each pair with 1, 2, or 3 keys and see a sorted list:
 ```
 (1) Learn Rust
 (2) Play Zelda
