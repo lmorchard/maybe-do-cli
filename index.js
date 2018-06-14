@@ -6,8 +6,12 @@ const asyncMergeSort = require("async-merge-sort");
 const packageData = require("./package.json");
 
 program
-  .version(packageData.version)
-  .usage("[options]")
+  .version(packageData.version, "-v, --version")
+  .usage("[options] <filename>")
+  .option("-o, --output [filename]", "output to file")
+  .option("-c, --cache [filename]", "cache filename")
+  .option("--no-cache", "skip using cache for answers")
+  .option("--reset-cache", "reset cache on run")
   .parse(process.argv);
 
 const infile = program.args[0];
@@ -15,7 +19,16 @@ if (!infile) {
   throw "infile required";
 }
 
-const outfile = program.args[1];
+let cmpCacheFn;
+if (program.cache === false) {
+  cmpCacheFn = false;
+} else if (program.cache === true) {
+  cmpCacheFn = `${infile}-cmpCache.json`;
+} else {
+  cmpCacheFn = program.cache;
+}
+
+const outfile = program.output;
 
 const listItems = fs
   .readFileSync(infile)
@@ -23,9 +36,19 @@ const listItems = fs
   .trim()
   .split("\n");
 
-readline.emitKeypressEvents(process.stdin);
-
 const cmpCache = {};
+if (cmpCacheFn && !program.resetCache) {
+  try {
+    Object.assign(
+      cmpCache,
+      JSON.parse(fs.readFileSync(cmpCacheFn).toString("utf8"))
+    );
+  } catch (e) {
+    // no-op
+  }
+}
+
+readline.emitKeypressEvents(process.stdin);
 
 asyncMergeSort(
   listItems,
@@ -34,6 +57,12 @@ asyncMergeSort(
     if (cmpCache[cmpKey]) {
       return cb(null, cmpCache[cmpKey]);
     }
+
+    const cmpKeyRev = `${b}|${a}`;
+    if (cmpCache[cmpKeyRev]) {
+      return cb(null, 0 - cmpCache[cmpKeyRev]);
+    }
+
     process.stdout.write(`(1) ${a}\n(2) ${b}\n(3) same? `);
     process.stdin.setRawMode(true);
     process.stdin.resume();
@@ -55,6 +84,7 @@ asyncMergeSort(
       }
       process.stdin.setRawMode(false);
       process.stdin.pause();
+
       cb(null, (cmpCache[cmpKey] = out));
     });
   },
@@ -67,6 +97,9 @@ asyncMergeSort(
     console.log(outData);
     if (outfile) {
       fs.writeFileSync(outfile, outData);
+    }
+    if (cmpCacheFn) {
+      fs.writeFileSync(cmpCacheFn, JSON.stringify(cmpCache));
     }
     process.exit();
   }
